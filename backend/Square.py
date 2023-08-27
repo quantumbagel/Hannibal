@@ -11,7 +11,7 @@
 8 fog swamp
 """
 import sys
-
+import backend.Constants
 # ATTRIBUTES
 """
 is_general: is the square a general?
@@ -23,14 +23,19 @@ is_our_color: is the square our color (false if neutral)
 troop_cost: the cost to capture this square (0 if captured/empty, -1 if not capturable (mountain)
 """
 
-import backend.Constants
+
 class Square:
-    def __init__(self, creation_string, troop_number):
-        self.args = creation_string\
-            .replace("attackable", "")\
-            .replace("selectable", "")\
-            .replace('selected', "")\
-            .replace('neutral', "")\
+    def __init__(self, creation_string, troop_number) -> None:
+        """
+        Initialize a new Square
+        :param creation_string: the raw html creation string
+        :param troop_number: the troops in that square
+        """
+        self.args = creation_string \
+            .replace("attackable", "") \
+            .replace("selectable", "") \
+            .replace('selected', "") \
+            .replace('neutral', "") \
             .split(" ")
         self.args = [i for i in self.args if i != ""]
         self.is_general = False
@@ -48,6 +53,7 @@ class Square:
             self.color = self.args[0].replace(" ", "")
         elif self.args[0] in backend.Constants.colors:  # colored square
             self.color = self.args[0].replace(" ", "")
+        # there are so many if statements that I almost died
         if 'swamp' in self.args:  # is an available swamp
             self.is_swamp = True
         if 'fog' in self.args:
@@ -84,5 +90,6 @@ class Square:
         except AttributeError:
             print(self.args, troop_number)
             sys.exit(1)
-    def __str__(self):
+
+    def __str__(self) -> str:
         return f"square type: {self.square_type} is_swamp: {self.is_swamp} is_mountain: {self.is_mountain} is_general: {self.is_general} is_fogged: {self.is_fogged} is_city: {self.is_city}"

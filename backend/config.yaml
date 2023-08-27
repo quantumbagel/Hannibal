@@ -1,4 +1,4 @@
 # GameManager framework configuration file
-ai: "ai.hannibal"
+ai: "ai.hannibal.HannibalBot"
 driver: "chrome" # chrome, firefox, edge, safari
-auto_join: "custom/test" # 1v1, ffa, custom/<custom room name>. if empty, ask user.
+auto_join: "ffa" # 1v1, ffa, custom/<custom room name>. if empty or invalid, ask user.
