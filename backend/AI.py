@@ -5,9 +5,10 @@ class AI:
     def __init__(self, name, description, author, url) -> None:
         """
         Initialize a generic AI
-        :param name: The bot's name
-        :param description: the bot's description
-        :param author: the bot's maker
+        :param name: The name of the bot
+        :param description: the description of the bot
+        :param author: the maker of the bot
+        :param url: the website of the source code/website of the bot
         """
         self.name = name
         self.description = description

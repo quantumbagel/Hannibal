@@ -92,4 +92,9 @@ class Square:
             sys.exit(1)
 
     def __str__(self) -> str:
-        return f"square type: {self.square_type} is_swamp: {self.is_swamp} is_mountain: {self.is_mountain} is_general: {self.is_general} is_fogged: {self.is_fogged} is_city: {self.is_city}"
+        return f"square type: {self.square_type}" \
+               f" is_swamp: {self.is_swamp}" \
+               f" is_mountain: {self.is_mountain}" \
+               f" is_general: {self.is_general}" \
+               f" is_fogged: {self.is_fogged}" \
+               f" is_city: {self.is_city}"

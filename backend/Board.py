@@ -25,9 +25,11 @@ class Board:
         :return: None
         """
         arrows = ['\u2190', '\u2191', '\u2192', '\u2193']
-        board_html = self.board_driver.get_attribute('outerHTML').replace('<tr>', "").replace("</tr>",
-                                                                                              "[endrow]").replace('"',
-                                                                                                                  "")
+        board_html = self.board_driver.\
+            get_attribute('outerHTML').\
+            replace('<tr>', "").\
+            replace("</tr>", "[end]").\
+            replace('"', "")
         board_html = [i.replace('></td>', "").replace(' class="', "").replace("</tbody>", "") for i in
                       board_html.split("<td class=")][1:]
         # the above jank is a html parser that's ~35 times faster than using native selenium
@@ -35,7 +37,7 @@ class Board:
         temp_board = []
         for item in board_html:
             square_count = -1
-            is_end_row = '[endrow]' in item  # flag for row ending
+            is_end_row = '[end]' in item  # flag for row ending
             if ">" in item:  # this means that the item has army
                 next_loop = False  # more html parsing to ensure that the arrows don't screw with the table
                 for i in item:  # we technically don't need this
@@ -45,7 +47,7 @@ class Board:
                 if next_loop:
                     continue
                 try:
-                    square_count = int(item.replace("</td", "").split('>')[1].replace("[endrow]", "")  # yay
+                    square_count = int(item.replace("</td", "").split('>')[1].replace("[end]", "")  # yay
                                        .replace("<div class=center-horizontal style=bottom: 0px;", "")  # more html
                                        .replace("<div class=center-horizontal style=top: 0px;", "")  # parser
                                        .replace("<div class=center-vertical style=left: 0px;", "")  # argh
@@ -55,7 +57,7 @@ class Board:
                     print(e)
                     sys.exit(1)
                 item = item.split('>')[0]
-            temp_board.append(Square(item.replace('[endrow]', ''), square_count))
+            temp_board.append(Square(item.replace('[end]', ''), square_count))
             if is_end_row:
                 new_board.append(temp_board)
                 temp_board = []
@@ -76,8 +78,10 @@ class Board:
                         exit_early = False
                         for direction in range(4):
                             new_position = [x + transform[direction][0], y + transform[direction][1]]
-                            if new_position[0] >= self.width or new_position[0] < 0 or new_position[1] >= self.height or \
-                                    new_position[1] < 0:
+                            if new_position[0] >= self.width\
+                                    or new_position[0] < 0\
+                                    or new_position[1] >= self.height\
+                                    or new_position[1] < 0:
                                 continue
                             print(new_position, self.board[new_position[1]])
                             if self.board[new_position[1]][new_position[0]].is_mountain:  # mountain
