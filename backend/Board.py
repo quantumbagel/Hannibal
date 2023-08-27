@@ -19,7 +19,6 @@ class Board:
         self.width = len(self.board[0])
         self.update_moves()
 
-
     def update(self):
         arrows = ['\u2190', '\u2191', '\u2192', '\u2193']
         board_html = self.board_driver.get_attribute('outerHTML').replace('<tr>', "").replace("</tr>",
@@ -38,7 +37,6 @@ class Board:
                 next_loop = False
                 for i in item:
                     if i in arrows:
-                        print("arrow, ignoring")
                         next_loop = True
                         break
                 if next_loop:
@@ -86,3 +84,13 @@ class Board:
                         if exit_early:
                             break
         return self.moves
+
+    def click(self, column, row):
+        elem = self.board_driver.\
+            find_element("xpath", f"/html/body/div/div/div/div[2]/table/tbody/tr[{str(row+1)}]/td[{str(column+1)}]")
+        elem.click()
+    def play_move(self, move):
+        # TODO: ignore arrows as this is causing weird stuff
+        transform = [[0, -1], [1, 0], [0, 1], [-1, 0]]
+        self.click(move.column, move.row)
+        self.click(move.column+transform[move.direction][0], move.row+transform[move.direction][1])
