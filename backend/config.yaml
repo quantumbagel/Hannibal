@@ -1,4 +1,6 @@
 # GameManager framework configuration file
 ai: "ai.hannibal.HannibalBot"
-driver: "chrome" # chrome, firefox, edge, safari
-auto_join: "ffa" # 1v1, ffa, custom/<custom room name>. if empty or invalid, ask user.
+auto_join: "custom/test" # 1v1, ffa, custom/<custom room name>. if empty or invalid, ask user.
+sign_in_mode: false # sign in to generals.io
+bot_username: 'TheWaywardAardvark'
+websocket_connection_delay: 1

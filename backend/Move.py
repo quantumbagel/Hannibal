@@ -45,3 +45,12 @@ class Move:
         if self.is_50_percent:
             s += ' 50%'
         return s
+
+    def __eq__(self, other):
+        return self.direction == other.direction \
+            and self.is_50_percent == other.is_50_percent \
+            and self.column == other.column \
+            and self.row == other.row \
+            and self.is_null == other.is_null \
+            and self.start_square == other.start_square \
+            and self.end_square == other.end_square

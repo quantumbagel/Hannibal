@@ -22,6 +22,10 @@ class HannibalBot(AI):
         :param timer: cmon
         :return: the move, you genius
         """
+
         if len(moves) == 0:
             return Move(null=True)
+        for move in moves:
+            if move.end_square.square_type == 0 and move.end_square.color == "":
+                return move
         return moves[random.randint(0, len(moves) - 1)]
