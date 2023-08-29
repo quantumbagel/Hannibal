@@ -1,0 +1,23 @@
+def evaluate_troop_spread():
+    add free army
+    maybe care about troop positioning?
+
+def optimal_expansion_moves():
+    have a set of (Board, move[]) objects to act as our queue. equality should be determined only by the board
+    have a best_eval variable
+    have a best_moves variable
+    load the (current_board, empty move list) into the queue
+    while the queue is not empty:
+        remove the current item from the queue and store it in CURRENT_SIM
+        if we're on the turn before the round ie. BASE CASE:
+            check if this is better than best_eval
+            if it is, replace best_eval and best_moves
+        else:
+            generate all relevant moves for CURRENT_SIM
+            for each generated move:
+                if generated move is in CURRENT_SIM moves:
+                    Ignore this move, this path can't possibly be optimal.
+                make the move
+                add (new_board, updated_move_string) to queue
+                unmake move
+    return best_moves
