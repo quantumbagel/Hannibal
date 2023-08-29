@@ -4,7 +4,7 @@ from backend.Square import Square
 from backend.Move import Move
 from backend.log import dprint
 from Constants import colors, abbrev_colors
-
+from copy import deepcopy
 class Board:
     def __init__(self, our_color) -> None:
         self.our_color = our_color
@@ -14,8 +14,8 @@ class Board:
         self.width = 0
         self._board_initalized = False
         self.queued_moves = []
+        self._previous_board_positions = []
         # note: you have to run Board.update before any value is ready
-
     def update(self, moves_2d_squares: list[list[backend.Square.Square]] = None, moves_html: str = None) -> None:
         """
         Update the board and moves to a list of
@@ -132,6 +132,7 @@ class Board:
         :param move: the move to play
         :return: None
         """
+        self._previous_board_positions.append(deepcopy(self.board))
         start = move.start_square
         is_50 = move.is_50_percent
         column = move.column
@@ -164,14 +165,11 @@ class Board:
                         new_pos = [x+trans[1], y+trans[0]]
                         ref = self.board[new_pos[0]][new_pos[1]]
                         try:
-                            print(ref.square_type, new_pos)
                             ref.is_fogged = False
                             if ref.square_type == 6:
                                 ref.square_type = 4  # assume fog obstacles are mountains
-                                ref._backup = 6
                             if ref.square_type == 5:
                                 ref.square_type = 0
-                                ref._backup = 5
 
                         except IndexError:
                             continue
@@ -182,8 +180,9 @@ class Board:
     def undo_move(self, move: backend.Move.Move):
         if self.queued_moves[-1] != move:  # can't undo the move
             return False
-        end_square = move.end_square
-        start_square = move.start_square
+        self.board = deepcopy(self._previous_board_positions[-1])
+        self.queued_moves.pop(-1)
+        self._previous_board_positions.pop(-1)
         return True
 
     def __str__(self):
@@ -204,20 +203,3 @@ class Board:
                     out += ' '
             out += '\n'
         return out
-
-from Constants import abbrev_colors
-from Constants import colors
-col = 'red'
-b = Board(col)
-b.update(moves_html='<tbody><tr><td class="fog"></td><td class="fog"></td><td class="fog obstacle"></td><td class="fog obstacle"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog obstacle"></td><td class="fog"></td><td class="fog obstacle"></td><td class="fog obstacle"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog obstacle"></td><td class="fog"></td><td class="fog"></td></tr><tr><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog obstacle"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog obstacle"></td><td class="fog obstacle"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td></tr><tr><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog obstacle"></td></tr><tr><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog obstacle"></td><td class="fog"></td><td class="fog obstacle"></td><td class="fog"></td><td class="fog obstacle"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td></tr><tr><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog obstacle"></td><td class="fog obstacle"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog obstacle"></td><td class=""></td><td class=""></td><td class="mountain"></td><td class="fog obstacle"></td><td class="fog"></td><td class="fog obstacle"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog obstacle"></td></tr><tr><td class="fog"></td><td class="fog obstacle"></td><td class="fog"></td><td class="fog obstacle"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class=""></td><td class="red general selectable">12</td><td class=""></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog obstacle"></td></tr><tr><td class="fog obstacle"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog obstacle"></td><td class=""></td><td class=""></td><td class="mountain"></td><td class="fog obstacle"></td><td class="fog obstacle"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog obstacle"></td><td class="fog"></td></tr><tr><td class="fog obstacle"></td><td class="fog"></td><td class="fog"></td><td class="fog obstacle"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog obstacle"></td><td class="fog obstacle"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td></tr><tr><td class="fog obstacle"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog obstacle"></td><td class="fog obstacle"></td><td class="fog obstacle"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td></tr><tr><td class="fog obstacle"></td><td class="fog obstacle"></td><td class="fog obstacle"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog obstacle"></td><td class="fog"></td><td class="fog obstacle"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td></tr><tr><td class="fog obstacle"></td><td class="fog"></td><td class="fog"></td><td class="fog obstacle"></td><td class="fog"></td><td class="fog obstacle"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog obstacle"></td><td class="fog"></td><td class="fog obstacle"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog obstacle"></td><td class="fog"></td></tr><tr><td class="fog"></td><td class="fog obstacle"></td><td class="fog obstacle"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog obstacle"></td><td class="fog"></td><td class="fog obstacle"></td><td class="fog"></td><td class="fog obstacle"></td><td class="fog obstacle"></td><td class="fog obstacle"></td><td class="fog"></td><td class="fog obstacle"></td><td class="fog"></td><td class="fog obstacle"></td><td class="fog"></td><td class="fog"></td><td class="fog obstacle"></td><td class="fog"></td></tr><tr><td class="fog"></td><td class="fog"></td><td class="fog obstacle"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog obstacle"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog obstacle"></td><td class="fog obstacle"></td><td class="fog"></td></tr><tr><td class="fog obstacle"></td><td class="fog"></td><td class="fog"></td><td class="fog obstacle"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog obstacle"></td><td class="fog"></td><td class="fog obstacle"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog obstacle"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td></tr><tr><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog obstacle"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog obstacle"></td><td class="fog obstacle"></td><td class="fog obstacle"></td><td class="fog obstacle"></td><td class="fog"></td></tr><tr><td class="fog"></td><td class="fog obstacle"></td><td class="fog"></td><td class="fog obstacle"></td><td class="fog obstacle"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog obstacle"></td><td class="fog obstacle"></td><td class="fog"></td><td class="fog obstacle"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog obstacle"></td><td class="fog obstacle"></td></tr><tr><td class="fog"></td><td class="fog"></td><td class="fog obstacle"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog obstacle"></td><td class="fog obstacle"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog obstacle"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog obstacle"></td></tr><tr><td class="fog"></td><td class="fog"></td><td class="fog obstacle"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog obstacle"></td><td class="fog"></td><td class="fog"></td><td class="fog obstacle"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog"></td><td class="fog obstacle"></td><td class="fog"></td><td class="fog"></td></tr></tbody>')
-s = (12, 5)
-e = (11, 5)
-print(b)
-m = Move(row=s[0], column=s[1], start_square=b.board[s[1]][s[0]], end_square=b.board[e[1]][e[0]], is_50_percent=1,
-         direction=3)
-n = Move(row=11, column=5, start_square=b.board[e[1]][e[0]], end_square=b.board[5][10], is_50_percent=1,
-         direction=3)
-b.play_move(m)
-b.undo_move(m)
-#b.play_move(n)
-print(b)

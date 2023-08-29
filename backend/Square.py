@@ -115,6 +115,6 @@ class Square:
             and self.is_mountain == other.is_mountain\
             and self.is_general == other.is_general\
             and self.is_fogged == other.is_fogged\
-            and self.is_city == other.city\
+            and self.is_city == other.is_city\
             and self.remembered_color == other.remembered_color\
             and self.color == other.color
