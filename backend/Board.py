@@ -1,10 +1,12 @@
 import sys
 import backend.Move
+from backend import Constants
 from backend.Square import Square
 from backend.Move import Move
 from backend.log import dprint
-from Constants import colors, abbrev_colors
 from copy import deepcopy
+
+
 class Board:
     def __init__(self, our_color) -> None:
         self.our_color = our_color
@@ -15,16 +17,22 @@ class Board:
         self._board_initalized = False
         self.queued_moves = []
         self._previous_board_positions = []
+        self.current_turn = 0
         # note: you have to run Board.update before any value is ready
-    def update(self, moves_2d_squares: list[list[backend.Square.Square]] = None, moves_html: str = None) -> None:
+
+    def update(self, current_turn: float, moves_2d_squares: list[list[backend.Square.Square]] = None,
+               moves_html: str = None) -> None:
         """
         Update the board and moves to a list of
+        :param current_turn: The new turn
         :param moves_2d_squares: a 2d list of Squares (from GameManager) to send to the Board
         :param moves_html: the HTML from the table to parse.
         :return: None
         """
+        self.current_turn = current_turn
         if moves_2d_squares is None and moves_html is None:
             dprint("Board.update", "Error! You must supply one of moves_2d_squares or moves_html to Board.update.")
+            sys.exit(1)
         if moves_2d_squares is not None:
             if len(moves_2d_squares) != self.height:
                 dprint("Board.update", f"Error! Height mismatch from moves_2d_squares. got: {len(moves_2d_squares)}"
@@ -81,8 +89,9 @@ class Board:
                 elif self.board[current_column][current_row].is_mountain:
                     temp_board.append(Square(item.replace('[end]', ''), square_count, override_mountain=True))
                 if self.board[current_column][current_row].color:
-                    temp_board.append(Square(item.replace('[end]', ''), square_count, override_color_from_remebrance=self.board[current_column][
-                            current_row].color))
+                    temp_board.append(Square(item.replace('[end]', ''), square_count,
+                                             override_color_from_remebrance=self.board[current_column][
+                                                 current_row].color))
 
             if is_end_row:
                 current_row = -1
@@ -132,14 +141,21 @@ class Board:
         :param move: the move to play
         :return: None
         """
+        self.current_turn += 0.5
+        # TODO: add army increase on multiples of 25
         self._previous_board_positions.append(deepcopy(self.board))
         start = move.start_square
         is_50 = move.is_50_percent
         column = move.column
         row = move.row
         direction = move.direction
-        transform = [[0, -1], [1, 0], [0, 1], [-1, 0]]
+        transform = [[0, -1], [1, 0], [0, 1], [-1, 0], [-1, -1], [1, 1], [-1, 1], [1, -1]]
         new_position = [row + transform[direction][0], column + transform[direction][1]]
+        if move.end_square != self.board[new_position[1]][new_position[0]]:
+            print("huh")
+            print(move.end_square)
+            print(row, column, transform[direction])
+            print(self.board[new_position[1]][new_position[0]])
         # calculate troops to move
         if is_50:
             if start.troop_number % 2:
@@ -156,15 +172,23 @@ class Board:
             self.board[new_position[1]][new_position[0]].troop_number += troops_to_move
             self.board[column][row].troop_number -= troops_to_move
             self.board[new_position[1]][new_position[0]].color = self.our_color
-
+        for x, row in enumerate(self.board):
+            for y, square in enumerate(row):
+                if square.square_type == 2:  # square is a general
+                    square.troop_number += 1
+                elif square.is_active_city:  # square is an active city
+                    square.troop_number += 1
+                if self.current_turn % 25 == 0 and square.color:  # all squares owned by a color get incremented by 1
+                    # generals and active cities get a +2
+                    square.troop_number += 1
         # unfog squares
         for x, row in enumerate(self.board):
             for y, square in enumerate(row):
                 if square.color == self.our_color:  # if the square is our color
                     for trans in transform:
-                        new_pos = [x+trans[1], y+trans[0]]
-                        ref = self.board[new_pos[0]][new_pos[1]]
+                        new_pos = [x + trans[1], y + trans[0]]
                         try:
+                            ref = self.board[new_pos[0]][new_pos[1]]
                             ref.is_fogged = False
                             if ref.square_type == 6:
                                 ref.square_type = 4  # assume fog obstacles are mountains
@@ -175,9 +199,11 @@ class Board:
                             continue
         # add to queued moves
         self.queued_moves.append(move)
+        self._update_moves()  # update the moves to the future board
         return True
 
     def undo_move(self, move: backend.Move.Move):
+        self.current_turn -= 0.5
         if self.queued_moves[-1] != move:  # can't undo the move
             return False
         self.board = deepcopy(self._previous_board_positions[-1])
@@ -187,19 +213,18 @@ class Board:
 
     def __str__(self):
         out = ''
-        piece_visualize = {0: "_", 1: "$", 2: "G", 3: "~", 4: "^", 5: "F", 6: "?", 7: "~"}
 
-        for row in b.board:
+        for row in self.board:
             for ind, square in enumerate(row):
-                our_color_index = colors.index(self.our_color)
+                our_color_index = Constants.colors.index(self.our_color)
                 if square.color:
-                    out += abbrev_colors[our_color_index][0]\
-                           + str(piece_visualize[square.square_type])\
-                           + abbrev_colors[our_color_index][1]
+                    out += Constants.abbrev_colors[our_color_index][0] \
+                           + str(Constants.piece_visualize[square.square_type]) \
+                           + Constants.abbrev_colors[our_color_index][1]
 
                 else:
-                    out += "_" + str(piece_visualize[square.square_type]) + "_"
-                if ind+1 < len(row):
+                    out += "_" + str(Constants.piece_visualize[square.square_type]) + "_"
+                if ind + 1 < len(row):
                     out += ' '
             out += '\n'
-        return out
+        return out[:-1]

@@ -15,12 +15,10 @@ class AI:
         self.author = author
         self.url = url
 
-    def get_move(self, moves: list[backend.Move.Move],
-                 board: list[list[backend.Square.Square]],
+    def get_move(self, board: backend.Board.Board,
                  timer: backend.Timer.Timer) -> backend.Move.Move:
         """
         Get the move to play.
-        :param moves: the Move list
         :param board: the Board
         :param timer: the time to decide
         :return: the Move to play

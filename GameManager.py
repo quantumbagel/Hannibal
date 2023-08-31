@@ -7,6 +7,8 @@ from selenium import webdriver
 from selenium.webdriver.support import expected_conditions
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
+
+from backend import Constants
 from backend.Timer import Timer
 from backend.Board import Board
 from backend.Leaderboard import Leaderboard
@@ -14,7 +16,6 @@ import ruamel.yaml
 from inspect import isclass
 from backend.log import dprint
 
-current_turn = 0
 config = ruamel.yaml.YAML().load(open('backend/config.yaml'))
 ai_import = config['ai'].split('.')
 ai = importlib.import_module('.'.join(ai_import[:-1]))
@@ -57,6 +58,7 @@ class GameManager:
                                        "download the correct webdriver.")
             sys.exit(1)
         self.configuration = configuration
+        self.current_turn = 0
 
     def enter_game(self) -> None:
         """
@@ -66,28 +68,28 @@ class GameManager:
         if self.configuration['sign_in_mode']:
             dprint("GameManager.enter_game", "sign in mode active! sign into your account,"
                                              " then close the window, stop the program, and change the setting back.")
-            dprint("GameManager.enter_game", f"Loading {GameManager.GIO_HOME}")
-            self.driver.get(GameManager.GIO_HOME)
+            dprint("GameManager.enter_game", f"Loading {Constants.GIO_HOME}")
+            self.driver.get(Constants.GIO_HOME)
             while True:
                 time.sleep(1)
                 continue
         if 'custom' not in self.configuration['auto_join']:  # not custom game, load homepage to enter 1v1/ffa queues
-            dprint("GameManager.enter_game", f"Loading {GameManager.GIO_HOME}")
-            self.driver.get(GameManager.GIO_HOME)
+            dprint("GameManager.enter_game", f"Loading {Constants.GIO_HOME}")
+            self.driver.get(Constants.GIO_HOME)
         else:  # custom game, load custom game page
-            dprint("GameManager.enter_game", f"Loading {GameManager.GIO_CUSTOM_GAME_PREFIX+self.configuration['auto_join'].split('/')[1]}")
-            self.driver.get(GameManager.GIO_CUSTOM_GAME_PREFIX + self.configuration['auto_join'].split('/')[1])
+            dprint("GameManager.enter_game", f"Loading {Constants.GIO_CUSTOM_GAME_PREFIX+self.configuration['auto_join'].split('/')[1]}")
+            self.driver.get(Constants.GIO_CUSTOM_GAME_PREFIX + self.configuration['auto_join'].split('/')[1])
         if not self.configuration['auto_join']:  # if we don't have a game mode, just stop here. run_game will wait
             return
         time.sleep(self.configuration['websocket_connection_delay'])  # wait for websocket
         if self.configuration['auto_join'].lower() == '1v1':  # join 1v1 queue
-            self.driver.find_element(By.XPATH, GameManager.GIO_HOME_PLAY_BUTTON_XPATH).click()
+            self.driver.find_element(By.XPATH, Constants.GIO_HOME_PLAY_BUTTON_XPATH).click()
             WebDriverWait(self.driver, 10).until(expected_conditions.element_to_be_clickable(
-                self.driver.find_element(By.XPATH, GameManager.GIO_HOME_1v1_BUTTON_XPATH))).click()
+                self.driver.find_element(By.XPATH, Constants.GIO_HOME_1v1_BUTTON_XPATH))).click()
         if self.configuration['auto_join'].lower() == 'ffa':  # join ffa queue
-            self.driver.find_element(By.XPATH, GameManager.GIO_HOME_PLAY_BUTTON_XPATH).click()
+            self.driver.find_element(By.XPATH, Constants.GIO_HOME_PLAY_BUTTON_XPATH).click()
             WebDriverWait(self.driver, 10).until(expected_conditions.element_to_be_clickable(
-                self.driver.find_element(By.XPATH, GameManager.GIO_HOME_FFA_BUTTON_XPATH))).click()
+                self.driver.find_element(By.XPATH, Constants.GIO_HOME_FFA_BUTTON_XPATH))).click()
         #  if we made it here without triggering an if statement, then the auto_join parameter is invalid,
         #  and we will ask the user to start the game from the generals.io homepage
         # TODO: add auto force start for ffa/1v1/custom
@@ -98,28 +100,27 @@ class GameManager:
         Assumes game in progress and will crash otherwise.
         :return: the current turn
         """
-        global current_turn
-        turn_counter = self.driver.find_element(By.XPATH, GameManager.GIO_GAME_TURN_COUNTER_XPATH)
+        turn_counter = self.driver.find_element(By.XPATH, Constants.GIO_GAME_TURN_COUNTER_XPATH)
         while True:
             check_it = turn_counter.text.split(" ")[1]
             c_t = 0
             if check_it.endswith('.'):
                 c_t = 0.5
             c_t += int(check_it.replace(".", ""))
-            if c_t != current_turn:
-                current_turn = c_t
-                return current_turn
+            if c_t != self.current_turn:
+                self.current_turn = c_t
+                return self.current_turn
 
     def is_game_over(self) -> int:
         """
         A function to check if the game is over yet
         :return: 0 if game is ongoing, 1 if we won, 2 if we lost by capture, 3 if we lost by afk
         """
-        elem = self.driver.find_elements(By.XPATH, GameManager.GIO_GAME_OVER_XPATH)
+        elem = self.driver.find_elements(By.XPATH, Constants.GIO_GAME_OVER_XPATH)
         if len(elem) == 0:
             return 0
         elem = elem[0]
-        reason = elem.find_element(By.XPATH, GameManager.GIO_GAME_OVER_TEXT_XPATH).text
+        reason = elem.find_element(By.XPATH, Constants.GIO_GAME_OVER_TEXT_XPATH).text
         if 'You went AFK.' in reason:
             return 3
         if reason == '':
@@ -133,17 +134,17 @@ class GameManager:
         :return: 1 if we won, 0 if we lost.
         """
         WebDriverWait(self.driver, 100000000).until(
-            expected_conditions.visibility_of_element_located((By.XPATH, GameManager.GIO_GAME_TABLE_XPATH)))
-        body = self.driver.find_element(By.XPATH, GameManager.GIO_SEND_KEY_XPATH)
-        leaderboard = Leaderboard(self.driver.find_element(By.XPATH, GameManager.GIO_GAME_LEADERBOARD_XPATH))
+            expected_conditions.visibility_of_element_located((By.XPATH, Constants.GIO_GAME_TABLE_XPATH)))
+        body = self.driver.find_element(By.XPATH, Constants.GIO_SEND_KEY_XPATH)
+        leaderboard = Leaderboard(self.driver.find_element(By.XPATH, Constants.GIO_GAME_LEADERBOARD_XPATH))
         b = Board(leaderboard.leaderboard[self.configuration['bot_username']]['color'])
         bot = getattr(ai, ai_import[-1])()  # nothing like dynamic class imports
-        for _ in range(5):  # zoom out so we can see (and click) on everything
-            body.send_keys("9")
+        body.send_keys("c")  # puts all squares on screen
         while True:
             leaderboard.update()
-            b.update()  # update squares and moves
-            move = bot.get_move(b.moves, b.board, Timer(time.time(), 250))  # get move (250 ms)
+            outer_html = self.driver.find_element(By.XPATH, Constants.GIO_GAME_TABLE_XPATH).get_attribute('outerHTML')
+            b.update(moves_html=outer_html, current_turn=self.current_turn)  # update squares and moves
+            move = bot.get_move(b, Timer(time.time(), 250))  # get move (250 ms)
             if not move.is_null:  # if we want to move, move
                 dprint("GameManager.run_game", "Playing move: ", move)
                 self.play_move(move)
