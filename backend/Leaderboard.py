@@ -1,5 +1,3 @@
-
-
 class Leaderboard:
     def __init__(self, leaderboard):
         self.leaderboard_driver = leaderboard

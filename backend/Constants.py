@@ -23,6 +23,8 @@ GIO_SEND_KEY_XPATH = "/html/body"
 GIO_HOME_1v1_BUTTON_XPATH = "/html/body/div/div/div/center/div[4]/div/center/button[2]"
 GIO_HOME_FFA_BUTTON_XPATH = "/html/body/div/div/div/center/div[4]/div/center/button[1]"
 GIO_GAME_LEADERBOARD_XPATH = "/html/body/div/div/div/table"
+GIO_GAME_CHAT_XPATH = "/html/body/div/div/div/div[3]/div/div"
+GIO_GAME_CHAT_ENTER_TEXT_XPATH = "/html/body/div/div/div/div[3]/div/input"
 # PIECE IDS:
 """
 0: empty/normal

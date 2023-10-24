@@ -1,5 +1,4 @@
 import importlib
-import json
 import sys
 import time
 import selenium.common
@@ -8,13 +7,15 @@ from selenium.webdriver.support import expected_conditions
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 
+import backend.Move
 from backend import Constants
 from backend.Timer import Timer
 from backend.Board import Board
 from backend.Leaderboard import Leaderboard
 import ruamel.yaml
 from inspect import isclass
-from backend.log import dprint
+from backend.Log import dprint
+from backend.Chat import Chat
 
 config = ruamel.yaml.YAML().load(open('backend/config.yaml'))
 ai_import = config['ai'].split('.')
@@ -137,14 +138,38 @@ class GameManager:
             expected_conditions.visibility_of_element_located((By.XPATH, Constants.GIO_GAME_TABLE_XPATH)))
         body = self.driver.find_element(By.XPATH, Constants.GIO_SEND_KEY_XPATH)
         leaderboard = Leaderboard(self.driver.find_element(By.XPATH, Constants.GIO_GAME_LEADERBOARD_XPATH))
-        b = Board(leaderboard.leaderboard[self.configuration['bot_username']]['color'])
+        chat = Chat(self.driver)
+        b = Board(leaderboard.leaderboard[self.configuration['bot_username']]['color'], leaderboard, chat)
         bot = getattr(ai, ai_import[-1])()  # nothing like dynamic class imports
-        body.send_keys("c")  # puts all squares on screen
+        for _ in range(5):  # zoom out so we can see (and click) on everything
+            body.send_keys("9")
         while True:
-            leaderboard.update()
+            try:
+                leaderboard.update()
+                chat.update()
+            except selenium.common.exceptions.NoSuchElementException:
+                dprint("GameManager.run_game", "failed to update chat/leaderboard! game is probably over.")
             outer_html = self.driver.find_element(By.XPATH, Constants.GIO_GAME_TABLE_XPATH).get_attribute('outerHTML')
             b.update(moves_html=outer_html, current_turn=self.current_turn)  # update squares and moves
-            move = bot.get_move(b, Timer(time.time(), 250))  # get move (250 ms)
+            bot_package = bot.get_move(b, Timer(time.time(), 250))  # get move (250 ms) TODO: dynamic move time?
+            try:
+                move, message = bot_package
+            except TypeError:
+                if type(bot_package) is None:
+                    self.wait_for_next_turn()
+                    continue
+                elif type(bot_package) == backend.Move.Move:
+                    move = bot_package
+                    message = ''
+                elif type(bot_package) == str:
+                    move = None
+                    message = bot_package
+                else:
+                    dprint("GameManager.run_game", "Invalid return from bot function! assuming null move.")
+                    self.wait_for_next_turn()
+                    continue
+            if message:
+                chat.send(message)
             if not move.is_null:  # if we want to move, move
                 dprint("GameManager.run_game", "Playing move: ", move)
                 self.play_move(move)
@@ -178,15 +203,16 @@ class GameManager:
 
     def play_move(self, move):
         """
-        Play the Move object. TODO: ignore arrows, implement 50%
+        Play the Move object. TODO: ignore arrows (i think this works)
         :param move:
         :return:
         """
         transform = [[0, -1], [1, 0], [0, 1], [-1, 0]]
         if not self.click(move.column, move.row):
             return
+        if move.is_50_percent:
+            self.click(move.column, move.row)  # double click if we are playing a 50% move.
         self.click(move.column + transform[move.direction][0], move.row + transform[move.direction][1])
-
 
 
 g = GameManager(config)

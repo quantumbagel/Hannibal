@@ -3,13 +3,17 @@ import backend.Move
 from backend import Constants
 from backend.Square import Square
 from backend.Move import Move
-from backend.log import dprint
+from backend.Leaderboard import Leaderboard
+from backend.Chat import Chat
+from backend.Log import dprint
 from copy import deepcopy
 
 
 class Board:
-    def __init__(self, our_color) -> None:
+    def __init__(self, our_color: int, leaderboard: Leaderboard, chat: Chat) -> None:
         self.our_color = our_color
+        self.leaderboard = leaderboard
+        self.chat = chat
         self.moves = []
         self.board = []
         self.height = 0
@@ -18,6 +22,7 @@ class Board:
         self.queued_moves = []
         self._previous_board_positions = []
         self.current_turn = 0
+        self._old_captures = []
         # note: you have to run Board.update before any value is ready
 
     def update(self, current_turn: float, moves_2d_squares: list[list[backend.Square.Square]] = None,
@@ -30,6 +35,15 @@ class Board:
         :return: None
         """
         self.current_turn = current_turn
+        captures = []
+        for msg in self.chat.messages:
+            if msg["type"] == 'capture':
+                captures.append(msg)
+        new_capture = None
+        if len(self._old_captures) != len(captures):  # last turn was a capture!
+            new_capture = captures[-1]
+            print("new capture!", new_capture)
+            self._old_captures = captures
         if moves_2d_squares is None and moves_html is None:
             dprint("Board.update", "Error! You must supply one of moves_2d_squares or moves_html to Board.update.")
             sys.exit(1)
@@ -82,13 +96,37 @@ class Board:
             if not self._board_initalized:
                 temp_board.append(Square(item.replace('[end]', ''), square_count))
             else:
+                # capture logic: if we have a new capture AND the last board pos for the square had a color,
+                # then change the color
+                if new_capture is not None and self.board[current_column][current_row].color \
+                        == new_capture['captured_color']:
+                    print("NEW CAPTURE LES GO. predicting square")
+                    if self.board[current_column][current_row].square_type == 2:
+                        temp_board.append(Square(item.replace('[end]', ''),
+                                                 square_count//2,
+                                                 override_city=True,
+                                                 override_color_from_remebrance=new_capture['capturer_color']))
+
+                        # generals become cities when captured
+                    else:  # otherwise, divide by 2 and carry on
+                        temp_board.append(Square(item.replace('[end]', ''),
+                                                 square_count//2,
+                                                 override_color_from_remebrance=new_capture['capturer_color']))
+
                 if self.board[current_column][current_row].is_general:
-                    temp_board.append(Square(item.replace('[end]', ''), square_count, override_general=True))
+                    print("remembering geenral....")
+                    temp_board.append(Square(item.replace('[end]', ''),
+                                             square_count, override_general=True))
                 elif self.board[current_column][current_row].is_city:
-                    temp_board.append(Square(item.replace('[end]', ''), square_count, override_city=True))
+                    print("remembering ceety....")
+                    temp_board.append(Square(item.replace('[end]', ''),
+                                             square_count, override_city=True))
                 elif self.board[current_column][current_row].is_mountain:
-                    temp_board.append(Square(item.replace('[end]', ''), square_count, override_mountain=True))
+                    print("remembering mountainnn....")
+                    temp_board.append(Square(item.replace('[end]', ''),
+                                             square_count, override_mountain=True))
                 if self.board[current_column][current_row].color:
+                    print("remembinr color")
                     temp_board.append(Square(item.replace('[end]', ''), square_count,
                                              override_color_from_remebrance=self.board[current_column][
                                                  current_row].color))
@@ -119,12 +157,15 @@ class Board:
                         exit_early = False
                         for direction in range(4):
                             new_position = [x + transform[direction][0], y + transform[direction][1]]
-                            if new_position[0] >= self.width \
-                                    or new_position[0] < 0 \
-                                    or new_position[1] >= self.height \
-                                    or new_position[1] < 0:
-                                continue
-                            if self.board[new_position[1]][new_position[0]].is_mountain:  # mountain
+                            try:
+                                if new_position[0] < 0 or new_position[1] < 0:
+                                    raise IndexError("FOR TYLER")
+                                    # ^ This is the single most important line of code in this program. :D
+                                if self.board[new_position[1]][new_position[0]].is_mountain:  # mountain
+                                    continue
+                            except IndexError:
+                                dprint("Board._update_moves", f"index error! attempted access at {new_position},"
+                                                              f" width: {self.width}, height: {self.height}")
                                 continue
                             if self.board[y][x].troop_number < 2:  # not enough troops
                                 exit_early = True
@@ -142,7 +183,6 @@ class Board:
         :return: None
         """
         self.current_turn += 0.5
-        # TODO: add army increase on multiples of 25
         self._previous_board_positions.append(deepcopy(self.board))
         start = move.start_square
         is_50 = move.is_50_percent
@@ -188,6 +228,8 @@ class Board:
                     for trans in transform:
                         new_pos = [x + trans[1], y + trans[0]]
                         try:
+                            if new_pos[0] < 0 and new_pos[1] < 0:
+                                continue
                             ref = self.board[new_pos[0]][new_pos[1]]
                             ref.is_fogged = False
                             if ref.square_type == 6:
@@ -209,11 +251,11 @@ class Board:
         self.board = deepcopy(self._previous_board_positions[-1])
         self.queued_moves.pop(-1)
         self._previous_board_positions.pop(-1)
+        self._update_moves()
         return True
 
     def __str__(self):
         out = ''
-
         for row in self.board:
             for ind, square in enumerate(row):
                 our_color_index = Constants.colors.index(self.our_color)

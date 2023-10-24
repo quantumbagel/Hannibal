@@ -1,24 +1,5 @@
-# PIECE IDS:
-"""
-0: empty/normal
-1 (with color/neutral) city
-2 (with color/neutral) general
-3 (with color/neutral) swamp
-4 mountain
-5 fog
-6 fog obstacle
-"""
 import sys
 import backend.Constants
-# ATTRIBUTES
-"""
-is_general: is the square a general?
-is_fogged: is the square fogged?
-is_swamp: is the square swamp?
-is_city: is the square a city?
-troop_number: the troop number on the square
-troop_cost: the cost to capture this square (0 if captured/empty, -1 if not capturable (mountain)
-"""
 
 
 class Square:
@@ -43,6 +24,7 @@ class Square:
         self.is_fogged = False
         self.is_swamp = False
         self.is_city = False
+        self.is_active_city = None
         self.is_mountain = False
         self.remembered_color = False
         self.creation_string = creation_string
@@ -52,7 +34,7 @@ class Square:
         if len(self.args) == 0:  # empty
             self.square_type = 0
         elif len(self.args) == 1 and self.args[0] in backend.Constants.colors:
-            self.square_type = 1
+            self.square_type = 0
             self.color = self.args[0].replace(" ", "")
         elif self.args[0] in backend.Constants.colors:  # colored square
             self.color = self.args[0].replace(" ", "")
@@ -65,6 +47,7 @@ class Square:
             self.is_mountain = True
         if 'city' in self.args:
             self.is_city = True
+            self.is_active_city = False
         if 'general' in self.args:
             self.is_general = True
         if override_city:
@@ -91,8 +74,6 @@ class Square:
         if self.is_fogged:
             self.square_type = 5
             return
-
-
         try:
             self.square_type
         except AttributeError:
@@ -116,5 +97,6 @@ class Square:
             and self.is_general == other.is_general\
             and self.is_fogged == other.is_fogged\
             and self.is_city == other.is_city\
+            and self.is_active_city == other.is_active_city\
             and self.remembered_color == other.remembered_color\
             and self.color == other.color

@@ -16,7 +16,7 @@ class AI:
         self.url = url
 
     def get_move(self, board: backend.Board.Board,
-                 timer: backend.Timer.Timer) -> backend.Move.Move:
+                 timer: backend.Timer.Timer) -> (backend.Move.Move, str):
         """
         Get the move to play.
         :param board: the Board
